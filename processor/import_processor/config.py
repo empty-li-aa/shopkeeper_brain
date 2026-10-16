@@ -16,7 +16,7 @@ class ImportConfig:
     """导入流程配置"""
 
     # ==================== 文档处理配置 ====================
-    max_content_length: int = 2000  # 切片最大长度
+    max_content_length: int = 1000  # 切片最大长度
     img_content_length: int = 200  # 图片上下文最大长度
     min_content_length: int = 500  # 合并短内容的最小长度
     overlap_sentences: int = 1  # 句子级切分时的重叠句数
@@ -25,6 +25,17 @@ class ImportConfig:
 
     image_extensions: Set[str] = field(
         default_factory=lambda: {".jpg", ".jpeg", ".png", ".gif", ".bmp", ".webp"}
+    )
+
+    # ==================== 图片摘要配置 ====================
+    # 是否调用 VLM 为每张图片生成中文标题。
+    # 置为 false（默认）时跳过逐张视觉模型调用，直接使用占位标题，
+    # 图片上传与 MD 引用替换照常执行。改 .env 的 ENABLE_IMG_SUMMARY 可切回。
+    enable_img_summary: bool = field(
+        default_factory=lambda: os.getenv("ENABLE_IMG_SUMMARY", "false")
+        .strip()
+        .lower()
+        in ("1", "true", "yes", "on")
     )
 
     # ==================== LLM 配置 ====================

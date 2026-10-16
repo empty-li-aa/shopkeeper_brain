@@ -540,13 +540,17 @@ class _MarkDownImageNode(BaseNode):
             context_length=config.img_content_length,
         )
 
-        # 3. VLM 生成摘要
-        summaries = self.summarizer.summarize_all(
-            document_title=md_path_obj.stem, # 文档标题
-            image_list=image_list,           # 图片列表
-            vl_model=config.vl_model,        # 模型
-            requests_per_minute=config.requests_per_minute, # 请求频率
-        )
+        # 3. VLM 生成摘要（enable_img_summary=false 时暂停，改用占位标题）
+        if config.enable_img_summary:
+            summaries = self.summarizer.summarize_all(
+                document_title=md_path_obj.stem, # 文档标题
+                image_list=image_list,           # 图片列表
+                vl_model=config.vl_model,        # 模型
+                requests_per_minute=config.requests_per_minute, # 请求频率
+            )
+        else:
+            self.logger.info("【step_3】图片摘要已暂停，使用占位标题")
+            summaries = {img.name: "图片描述" for img in image_list}
         # 4. 上传 & 替换
         new_md_content = self.uploader.upload_and_replace(
             document_name=md_path_obj.stem,               # 文档名称

@@ -8,6 +8,8 @@ from knowledge.processor.import_processor.nodes.pdf_to_md_node import PdfToMdNod
 from knowledge.processor.import_processor.nodes.entry_node import EntryNode
 from knowledge.processor.import_processor.nodes.md_to_img_node import _MarkDownImageNode
 from knowledge.processor.import_processor.state import ImportGraphState
+from knowledge.processor.import_processor.nodes.document_split_node import DocumentSplitNode
+
 
 """
 编排节点
@@ -55,7 +57,8 @@ def import_graph() -> CompiledStateGraph:
     node_name_obj = {
         "entry_node": EntryNode(),
         "pdf_to_md_node": PdfToMdNode(),
-        "md_to_img_node": _MarkDownImageNode()
+        "md_to_img_node": _MarkDownImageNode(),
+        "document_split_node": DocumentSplitNode()
     }
 
     # 4. 遍历映射表添加
@@ -72,7 +75,8 @@ def import_graph() -> CompiledStateGraph:
 
     # 5.2 定义业务边
     work_flow.add_edge("pdf_to_md_node", "md_to_img_node")
-    work_flow.add_edge("md_to_img_node", END)
+    work_flow.add_edge("md_to_img_node", "document_split_node")
+    work_flow.add_edge("document_split_node", END)
 
     # 5.3 编译
     complied_state_graph = work_flow.compile()
@@ -91,7 +95,7 @@ def run_import_graph():
     # 1. 定义运行graph流程的状态
 
     graph_state = {
-        "import_file_path": r"D:\cx\python\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用.pdf",
+        "import_file_path": r"D:\cx\python\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\万用表RS-12的使用\markdown_new.md",
         "file_dir": r"D:\cx\python\shopkeeper_brain\knowledge\processor\import_processor\temp_dir"
 
     }
