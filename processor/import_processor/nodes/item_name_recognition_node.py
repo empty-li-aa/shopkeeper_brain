@@ -1,3 +1,4 @@
+from pathlib import Path
 from typing import List, Tuple, Dict, Any, Optional
 
 from pymilvus import MilvusClient, DataType
@@ -242,7 +243,7 @@ class ItemNameRecognitionNode(BaseNode):
         except Exception as e:
             self.logger.error(f"商品名{item_name}插入失败 {str(e)}")
 
-        self.logger.info(f"插入的结果:{inserted_result},主键值:{inserted_result.get('ids')}")
+        self.logger.info(f"插入成功，插入的结果:{inserted_result},主键值:{inserted_result.get('ids')}")
 
     def _create_item_name_collection(self, item_name_collection_name: str, milvus_client: MilvusClient):
         """
@@ -314,7 +315,12 @@ if __name__ == '__main__':
     setup_logging()
 
     # 1. 读取chunk.json
-    chunk_json_path = r"D:\cx\python\shopkeeper_brain\knowledge\processor\import_processor\temp_dir\chunks.json"
+    temp_dir = Path(r"D:\cx\python\shopkeeper_brain\knowledge\processor\import_processor\temp_dir")
+
+    chunk_json_path = temp_dir / "chunks.json"
+    output_path = temp_dir / "chunks_item_name.json"
+
+
     with open(chunk_json_path, "r", encoding="utf-8") as f:
         chunk_content = json.load(f)
 
@@ -335,3 +341,7 @@ if __name__ == '__main__':
     print(f"chunks数量: {len(result.get('chunks', []))}")
     print(f"首个chunk是否含item_name: {'item_name' in result['chunks'][0]}")
 
+    with open(output_path, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=4, ensure_ascii=False)
+
+    print(f"item_name 生成完成，结果已保存 {output_path}")
