@@ -51,7 +51,9 @@ class BgeEmbeddingChunksNode(BaseNode):
             result = self._embed_chunks(batch, embedding_model)
             embed_result.extend(result)
 
-        return embed_result
+        # 5. 回写state（节点必须返回state字典，不能直接返回列表）
+        state["chunks"] = embed_result
+        return state
 
     def _validate_state(self, state: ImportGraphState):
         chunks = state.get('chunks')
