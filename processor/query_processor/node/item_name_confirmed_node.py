@@ -349,6 +349,8 @@ class ItemNameConfirmNode(BaseNode):
         # 4. 状态决策
         self._decide(state, item_names, confirmed, options, rewritten_query)
 
+        return state
+
     def _decide(self, state, item_names, confirmed, options, rewritten_query):
         """
         状态决策函数。
