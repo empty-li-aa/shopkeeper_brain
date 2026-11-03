@@ -5,7 +5,7 @@ from openai import OpenAI
 from dotenv import load_dotenv
 from pymilvus.model.hybrid import BGEM3EmbeddingFunction
 from langchain_openai import ChatOpenAI
-
+from FlagEmbedding import FlagReranker
 from knowledge.utils.client.base import BaseClientManager, logger
 
 load_dotenv()
@@ -22,6 +22,9 @@ class AIClients(BaseClientManager):
 
     _bge_m3_client: Optional[BGEM3EmbeddingFunction] = None
     _bge_m3_lock = threading.Lock()
+
+    _bge_m3_rerank_client: Optional[FlagReranker] = None
+    _bge_m3_rerank_lock = threading.Lock()
 
     # ── OpenAI / VLM ──
 
@@ -78,7 +81,7 @@ class AIClients(BaseClientManager):
             raise ConnectionError(f"OpenAI 连接失败: {e}") from e
 
 
-    # ── BGE_M3 ──
+    # ── BGE_M3 嵌入模型 ──
     @classmethod
     def get_bge_m3_client(cls):
         return cls._get_or_create("_bge_m3_client", cls._bge_m3_lock, cls._create_bge_m3_client)
@@ -109,15 +112,48 @@ class AIClients(BaseClientManager):
         except Exception as e:
             raise ConnectionError(f"BGE_M3嵌入模型客户端创建失败: {e}") from e
 
+    # ── BGE_M3 重排序模型 ──
+    @classmethod
+    def get_bge_m3_rerank_client(cls):
+        return cls._get_or_create("_bge_m3_rerank_client", cls._bge_m3_rerank_lock, cls._create_bge_m3_rerank_client)
+
+    @classmethod
+    def _create_bge_m3_rerank_client(cls):
+        """
+        创建bge_m3_rerank_client 客户端
+        Returns:
+        """
+
+        try:
+            # 1. 获取环境变量
+            model_name = cls._require_env('BGE_RERANKER_LARGE')
+            device = cls._require_env('BGE_DEVICE')
+            fp16 = cls._require_env('BGE_FP16')
+
+            # 2. 创建
+            reranker = FlagReranker(
+                model_name_or_path=model_name,
+                device=device,
+                use_fp16=fp16
+            )
+            return reranker
+        except EnvironmentError as e:
+            raise
+
+        except Exception as e:
+            raise ConnectionError(f"BGE_M3重排序模型客户端创建失败: {e}") from e
+
 if __name__ == '__main__':
-    llm_client: ChatOpenAI = AIClients.get_llm_client()
+    # llm_client: ChatOpenAI = AIClients.get_llm_client()
+    #
+    # llm_response = llm_client.invoke("请您给我讲一个笑话，要求输出格式是一个json")
+    #
+    # llm_result = llm_response.content
+    #
+    # import json
+    #
+    # result = json.loads(llm_result)
+    #
+    # print(result)
 
-    llm_response = llm_client.invoke("请您给我讲一个笑话，要求输出格式是一个json")
-
-    llm_result = llm_response.content
-
-    import json
-
-    result = json.loads(llm_result)
-
-    print(result)
+    reranker = AIClients.get_bge_m3_rerank_client()
