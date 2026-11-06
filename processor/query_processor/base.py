@@ -34,8 +34,8 @@ class BaseNode(ABC):
         ...         return state
         ...
         >>> # 作为 LangGraph 节点使用
-        >>> node = MyNode()
-        >>> workflow.add_node("my_node", node)
+        >>> nodes = MyNode()
+        >>> workflow.add_node("my_node", nodes)
     """
 
     name: str = "base_node"

@@ -1,6 +1,8 @@
 import logging, re, json
 from json import JSONDecodeError
 
+from knowledge.utils.mongo_history_util import get_recent_messages
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 from typing import Dict, Tuple, List, Any
@@ -291,8 +293,8 @@ class ItemNameAligner:
         return [name for name, score in item_name_score.items() if
                 max_score - score <= self._config.item_name_score_gap]
 
-class ItemNameConfirmNode(BaseNode):
-    name = "item_name_confirm_node"
+class ItemNameConfirmedNode(BaseNode):
+    name = "item_name_confirmed_node"
 
     def __init__(self):
         super().__init__()
@@ -331,16 +333,24 @@ class ItemNameConfirmNode(BaseNode):
         original_query = state.get("original_query")
         session_id = state.get('session_id')
 
-        # 2. 读取历史（后面讲）TODO
-        chat_history = ""
+        # 2. 读取历史（后面讲）
+        history_context = get_recent_messages(session_id=session_id, limit=10)
+
+        formatted_history = []
+        for history in history_context:
+            role = history.get('role', '')
+            text = history.get('text', '')
+            formatted_context = f"角色:{role},内容:{text}"
+            formatted_history.append(formatted_context)
+        formatted_history_str = " ".join(formatted_history)
 
         #3. 调用 LLM 提取商品名称
-        clean_llm_result = self._item_name_extractor.extract_item_name(original_query, chat_history)
+        clean_llm_result = self._item_name_extractor.extract_item_name(original_query, formatted_history_str)
 
         item_names = clean_llm_result.get('item_names')
         rewritten_query = clean_llm_result.get('rewritten_query')
 
-        # 3. 向量对齐（含分数差异过滤）
+        # 4. 向量对齐（含分数差异过滤）
         if item_names:
             confirmed, options = self._item_name_aligner.match_align_filter(item_names)
         else:
@@ -349,6 +359,8 @@ class ItemNameConfirmNode(BaseNode):
         # 4. 状态决策
         self._decide(state, item_names, confirmed, options, rewritten_query)
 
+        # 5. 更新state的历史对话(从MongoDB中查询出来)
+        state['history'] = history_context
         return state
 
     def _decide(self, state, item_names, confirmed, options, rewritten_query):
@@ -388,7 +400,7 @@ class ItemNameConfirmNode(BaseNode):
 
 
 if __name__ == "__main__":
-    node = ItemNameConfirmNode()
+    node = ItemNameConfirmedNode()
     init_state={
         "original_query": "RS-12 数字万用表怎么测试电阻？以及华为擎云L420 用户手册 中包含操作环境嘛"
     }

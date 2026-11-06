@@ -12,7 +12,9 @@ _tasks_done_list: Dict[str, List[str]] = defaultdict(list)
 _tasks_duration: Dict[str, Dict[str, float]] = defaultdict(dict)
 
 # 只要访问不存在的 key，自动帮你初始化为 {} 查询时候用
-# _tasks_result: Dict[str, Dict[str, str]] = defaultdict(dict)
+# key：任务id    内部字典的key:任务对应的某一个节点（答案生成节点）--->节点对应的结果
+# {"task1":{"answer":"节点的结果"}}
+_tasks_result: Dict[str, Dict[str, str]] = defaultdict(dict)
 
 _tasks_status: Dict[str, str] = {}
 
@@ -30,7 +32,14 @@ _NODE_NAME_TO_CN: Dict[str, str] = {
     "embedding_chunk_node": "向量生成",
     "import_milvus_node": "导入向量数据库",
     "__end__": "处理完成",
-
+    # --- Query 流程节点（kb/query_process/main_graph.py）---
+    "item_name_confirmed_node": "确认问题产品",
+    "answer_output_node": "生成答案",
+    "reranker_node": "重排序",
+    "rrf_merge_node": "倒排融合",
+    "web_mcp_search_node": "网络搜索",
+    "hybrid_vector_search_node": "切片搜索",
+    "hyde_vector_search_node": "切片搜索(假设性文档)"
 }
 
 
@@ -85,20 +94,20 @@ def update_task_status(task_id: str, status_name: str) -> None:
     # 1. 更新指定任务的总体运行状态（如 processing 等）
     _tasks_status[task_id] = status_name
 
-#
-# def set_task_result(task_id: str, key: str, value: str) -> None:
-#     """
-#     存储任务结果字段（如 answer / error）。
-#     """
-#     _tasks_result[task_id][key] = value
+
+def set_task_result(task_id: str, key: str, value: str) -> None:
+    """
+    存储任务结果字段（如 answer / error）。
+    """
+    _tasks_result[task_id][key] = value
 
 
-# def get_task_result(task_id: str, key: str, default: str = "") -> str:
-#     """
-#     获取任务结果字段（如 answer / error）。
-#     """
-#     return _tasks_result.get(task_id, {}).get(key, default)
-#
+def get_task_result(task_id: str, key: str, default: str = "") -> str:
+    """
+    获取任务结果字段（如 answer / error）。
+    """
+    return _tasks_result.get(task_id, {}).get(key, default)
+
 
 
 def add_node_duration(task_id: str, node_name: str, duration: float) -> None:

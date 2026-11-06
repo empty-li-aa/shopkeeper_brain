@@ -43,7 +43,7 @@ def create_query_graph() -> CompiledStateGraph:
 
     流程结构::
 
-        item_name_confirm
+        item_name_confirmed
               │
               ├── (有答案) ──────────────────────────> answer_output
               │                                            │
