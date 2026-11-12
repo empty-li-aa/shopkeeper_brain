@@ -9,7 +9,7 @@ from knowledge.processor.query_processor.config import QueryConfig, get_config
 from knowledge.processor.query_processor.exceptions import QueryProcessError
 from knowledge.utils.task_util import add_running_task, add_done_task, get_task_status, get_running_task_list, \
     get_done_task_list
-
+from knowledge.utils.sse_util import push_sse_event, SSEEvent
 
 T = TypeVar("T")  # 泛型状态类型
 
@@ -34,8 +34,8 @@ class BaseNode(ABC):
         ...         return state
         ...
         >>> # 作为 LangGraph 节点使用
-        >>> nodes = MyNode()
-        >>> workflow.add_node("my_node", nodes)
+        >>> node = MyNode()
+        >>> workflow.add_node("my_node", node)
     """
 
     name: str = "base_node"
@@ -119,6 +119,23 @@ class BaseNode(ABC):
             log_msg += f" {message}"
         self.logger.info(log_msg)
 
+    def _push_progress(self, task_id):
+        """
+        推送节点的进度(全量推所有进度)
+        Args:
+            task_id: 任务id
+
+        Returns:
+
+        """
+        push_sse_event(task_id=task_id,
+                       event=SSEEvent.PROGRESS,
+                       data={
+                           "status": get_task_status(task_id),
+                           "done_list": get_done_task_list(task_id),
+                           "running_list": get_running_task_list(task_id),
+                       }
+                       )
 
     def setup_logging(level: int = logging.INFO):
         """配置查询流程日志。
